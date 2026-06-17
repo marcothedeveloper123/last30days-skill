@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import sys
 import urllib.parse
 from datetime import datetime
@@ -188,6 +189,54 @@ def _parse_serper_date(raw: str) -> str | None:
 
 
 # ---------------------------------------------------------------------------
+# Kagi Search API
+# ---------------------------------------------------------------------------
+
+def kagi_search(
+    query: str, date_range: tuple[str, str], api_key: str, count: int = 5,
+    extract_count: int = 0,
+) -> tuple[list[dict], dict]:
+    # Kagi Search API v1: POST /search, Bot auth, results at data.search[].
+    body = {
+        "query": query,
+        "limit": count,
+        "filters": {"after": date_range[0], "before": date_range[1]},
+    }
+    # Opt-in (KAGI_EXTRACT_COUNT): fetch full-page markdown for the top N results.
+    # Kagi replaces each result's snippet with the extracted markdown. Costs extra.
+    if extract_count and int(extract_count) > 0:
+        body["extract"] = {"count": min(int(extract_count), 10)}
+    data = http.request(
+        "POST", "https://kagi.com/api/v1/search",
+        headers={"Authorization": f"Bot {api_key}"},
+        json_data=body,
+        timeout=20 + (20 if extract_count else 0),
+    )
+    results = (data.get("data") or {}).get("search") or []
+    items = []
+    for i, r in enumerate(results[:count]):
+        raw_date = (r.get("time") or "")[:10]
+        pub_date = _normalize_date(raw_date) if raw_date else None
+        # Server already constrains by filters.after/before; keep undated items,
+        # only drop ones with a date that falls outside the window.
+        if pub_date and not _in_date_range(pub_date, date_range):
+            continue
+        url = r.get("url", "")
+        items.append({
+            "id": f"KG{i + 1}",
+            "title": html.unescape(r.get("title", "")),
+            "url": url,
+            "source_domain": _domain(url),
+            "snippet": html.unescape(r.get("snippet", "")),
+            "date": pub_date,
+            "relevance": 0.8,
+            "why_relevant": "Kagi web search",
+        })
+    artifact = {"label": "kagi", "webSearchQueries": [query], "resultCount": len(items)}
+    return items, artifact
+
+
+# ---------------------------------------------------------------------------
 # Dispatcher
 # ---------------------------------------------------------------------------
 
@@ -199,7 +248,9 @@ def web_search(
 ) -> tuple[list[dict], dict]:
     """Run web search with the specified or auto-detected backend."""
     if backend == "auto":
-        if config.get("BRAVE_API_KEY"):
+        if config.get("KAGI_API_KEY"):
+            backend = "kagi"
+        elif config.get("BRAVE_API_KEY"):
             backend = "brave"
         elif config.get("EXA_API_KEY"):
             backend = "exa"
@@ -211,7 +262,16 @@ def web_search(
             return [], {}
     items: list[dict] = []
     artifact: dict = {}
-    if backend == "brave":
+    if backend == "kagi":
+        key = config.get("KAGI_API_KEY")
+        if not key:
+            raise RuntimeError("KAGI_API_KEY is required when web_backend='kagi'")
+        try:
+            extract_n = int(config.get("KAGI_EXTRACT_COUNT") or 0)
+        except (TypeError, ValueError):
+            extract_n = 0
+        items, artifact = kagi_search(query, date_range, key, extract_count=extract_n)
+    elif backend == "brave":
         key = config.get("BRAVE_API_KEY")
         if not key:
             raise RuntimeError("BRAVE_API_KEY is required when web_backend='brave'")

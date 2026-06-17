@@ -72,7 +72,8 @@ def _merge_category_peers(topic: str, subreddits: list[str]) -> tuple[list[str],
 def _has_backend(config: dict) -> bool:
     """Check if any web search backend is available."""
     return bool(
-        config.get("BRAVE_API_KEY")
+        config.get("KAGI_API_KEY")
+        or config.get("BRAVE_API_KEY")
         or config.get("EXA_API_KEY")
         or config.get("SERPER_API_KEY")
         or config.get("PARALLEL_API_KEY")

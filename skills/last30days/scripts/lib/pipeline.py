@@ -120,7 +120,7 @@ def available_sources(config: dict[str, Any], requested_sources: list[str] | Non
         available.append("bluesky")
     if env.is_truthsocial_available(config):
         available.append("truthsocial")
-    if config.get("BRAVE_API_KEY") or config.get("EXA_API_KEY") or config.get("SERPER_API_KEY") or config.get("PARALLEL_API_KEY"):
+    if config.get("KAGI_API_KEY") or config.get("BRAVE_API_KEY") or config.get("EXA_API_KEY") or config.get("SERPER_API_KEY") or config.get("PARALLEL_API_KEY"):
         available.append("grounding")
     if requested_sources and "jobs" in requested_sources:
         available.append("jobs")
@@ -149,7 +149,9 @@ def diagnose(config: dict[str, Any], requested_sources: list[str] | None = None)
     google_key = _google_key(config)
     x_status = env.get_x_source_status(config)
     native_web_backend = None
-    if config.get("BRAVE_API_KEY"):
+    if config.get("KAGI_API_KEY"):
+        native_web_backend = "kagi"
+    elif config.get("BRAVE_API_KEY"):
         native_web_backend = "brave"
     elif config.get("EXA_API_KEY"):
         native_web_backend = "exa"
