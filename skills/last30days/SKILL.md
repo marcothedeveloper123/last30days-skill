@@ -23,12 +23,14 @@ search the web yourself.**
 2. Run exactly this, replacing TOPIC:
 
    ```bash
-   python3 "${SKILL_DIR}/scripts/last30days.py" "TOPIC" --emit md
+   python3 "${SKILL_DIR}/scripts/last30days.py" "TOPIC" --emit md --quick
    ```
 
    - Web search is **Kagi, already configured as the default** — do NOT pass `--web-backend`.
-   - This runs a full multi-source pass; the engine picks which sources by the topic's intent.
-   - Add `--quick` ONLY when you want a faster, shallower run (it narrows to the top few sources).
+   - **Run this ONCE** with a focused topic. Do NOT fire repeated or refined queries — each run prints
+     a large evidence block, and this is a limited-context model; a handful of runs will overflow it.
+   - `--quick` keeps the output compact (top sources by intent). Drop it only for a deliberately deeper
+     pass, and only early in a session when you have plenty of context budget left.
 
 3. Read the **Ranked Evidence Clusters** the engine prints, then write a short brief: a few
    plain paragraphs on the main themes people are discussing, grounded ONLY in that evidence
@@ -36,7 +38,9 @@ search the web yourself.**
 
 ## Do NOT
 
-- Do NOT use `curl`, `WebSearch`, or any manual search — the engine handles every source.
+- Do NOT use `curl`, `wget`, `WebSearch`, or any manual fetch — the engine handles every source.
+- **NEVER `curl` a web page, README, or HTML into the conversation** — a single page can be tens of
+  thousands of tokens and will overflow the context window. Whatever you need is in the engine's evidence.
 - Do NOT guess or discover install paths, and do NOT write a path-discovery loop — use `SKILL_DIR` exactly as above.
 - Do NOT generate a query plan — the engine plans on its own when `--plan` is omitted.
 - Do NOT invent facts beyond the engine's evidence, and do NOT append your own "Sources:" list.
