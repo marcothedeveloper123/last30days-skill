@@ -23,11 +23,12 @@ search the web yourself.**
 2. Run exactly this, replacing TOPIC:
 
    ```bash
-   python3 "${SKILL_DIR}/scripts/last30days.py" "TOPIC" --emit md --quick
+   python3 "${SKILL_DIR}/scripts/last30days.py" "TOPIC" --emit md
    ```
 
    - Web search is **Kagi, already configured as the default** — do NOT pass `--web-backend`.
-   - Drop `--quick` for a deeper, slower pass.
+   - This runs a full multi-source pass; the engine picks which sources by the topic's intent.
+   - Add `--quick` ONLY when you want a faster, shallower run (it narrows to the top few sources).
 
 3. Read the **Ranked Evidence Clusters** the engine prints, then write a short brief: a few
    plain paragraphs on the main themes people are discussing, grounded ONLY in that evidence
